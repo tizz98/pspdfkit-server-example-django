@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <p>You're not authorized to view this document.</p>
+    <a href="{% url 'documents_list' %}">Go back</a>
+{% endblock %}

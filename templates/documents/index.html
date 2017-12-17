@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<header class="navbar">
+    <div class="navbar-left">
+        <form method="post" id="upload" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.file }}
+            <button class="btn" type="submit">Upload PDF</button>
+        </form>
+        <script>
+            (function() {
+                var form = document.querySelectorAll("form#upload")[0];
+                var input = form.querySelectorAll('input[type="file"]')[0];
+                input.addEventListener("change", function(e) {
+                    if (e.target.files.length > 0) {
+                        form.submit();
+                        form.setAttribute("disabled", true);
+                    }
+                });
+            })();
+        </script>
+    </div>
+    <div class="navbar-center">
+        <h1>Your Documents</h1>
+    </div>
+    <div class="navbar-right">
+        <span class="user">{{ user.username }}</span>
+        <a href="{% url 'logout' %}" class="btn btn-default navbar-btn">logout</a>
+    </div>
+</header>
+<main>
+    <div class="thumbnails">
+        {% for document in documents %}
+            <div class="thumbnail">
+                <a href="{% url 'document_detail' document_id=document.id %}" class="doc-list-item">
+                    <div class="thumbnail-img">
+                        <img src="{{ document.get_cover_url }}" />
+                    </div>
+                    <div class="thumbnail-caption">
+                        <span>{{ document.document_title }}</span>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

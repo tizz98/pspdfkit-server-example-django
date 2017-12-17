@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:9.6
+    environment:
+      POSTGRES_USER: pspdfkit
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pspdfkit
+      POSTGRES_INITDB_ARGS: --data-checksums
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: .
+    environment:
+      PSPDFKIT_SERVER_INTERNAL_URL: http://pspdfkit:5000
+      PSPDFKIT_SERVER_EXTERNAL_URL: http://localhost:5000
+      API_AUTH_TOKEN: secret
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+
+  pspdfkit:
+    image: "${PSPDFKIT_IMAGE:-docker.pspdfkit.com/pspdfkit:latest}"
+
+    environment:
+      PGUSER: pspdfkit
+      PGPASSWORD: password
+      PGDATABASE: pspdfkit
+      PGHOST: db
+      PGPORT: 5432
+
+      # Activation key for your PSPDFKit Server installation
+      ACTIVATION_KEY: ${PSPDFKIT_ACTIVATION_KEY}
+
+      # Secret token used for authenticating API requests.
+      API_AUTH_TOKEN: secret
+
+      # Base key used for deriving secret keys for the purposes of authentication.
+      SECRET_KEY_BASE: secret-key-base
+
+      # Public key used for verification of JWTs from web clients. It has to be in the PEM format.
+      JWT_PUBLIC_KEY: |
+        -----BEGIN PUBLIC KEY-----
+        MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAvhnVp2kTOTeILLgTrVHt
+        ZTS5/EiJ0jJXzs+f5BtG6HscHO33csm/5rfdBg1l+E1SnQeelP/8KCRKiECw69nn
+        yGra+6XwByVVSAH/zIBBRGdKH/Egsz0/Zd0w94jvc9FYj0j2oYKjAHjera9Lac4P
+        oIa/RW28Uo2gHjjOtFezSA77+BfwxHItfTeTVjrGA+5/rogc6CJ9FOcIhT/xA9i+
+        J1obZvDeQwaPj7EOvMpqiJU2X7XdMZdnOFTIuckRaTCjof2ORG9mQ0s9eYEvd7PP
+        rwtwbtmZ9K02LOXRzSoP7MbHW9/a06yFZL8o/tYSXnPigKTd1GUSRB4mV4sc1chM
+        9TMQBplS/yNKoogrjI27aqqMqIpJcFuPYOIgct7u2EaCoN4iMqAl0o7lGS9ab4eV
+        3kBh2yiaP7+aJIS4/IdvZuWdDt1TXSHjIkbDrNbwBj7W0sz3CxJXhQPYki4XC/5h
+        CIqh1XDlkDTKjJf7hLBC+VGykndTrNJnpRrEjo5cmF/XPB5UxGQGV7Cmh1ejKE+c
+        wXIoC/fBp25b854FhlAVcPth6RJ50d03eur/J5T05kd9nrqM2dw6PUQzp8CA9Qci
+        DT+dKEUh0UOM8HRen9JwYs4vPEU2Coh2oKkSO5uuR87S0GcaYANmBM/sNynYMQHd
+        Ir0riZaONoCGKlkO1NwaWSsCAwEAAQ==
+        -----END PUBLIC KEY-----
+      JWT_ALGORITHM: RS256
+
+      # Credentials to access the admin dashboard
+      DASHBOARD_USERNAME: dashboard
+      DASHBOARD_PASSWORD: secret
+
+      # Asset storage backend that is used by PSPDFKit Server
+      ASSET_STORAGE_BACKEND: built-in
+
+    depends_on:
+    - db
+    ports:
+      - "5000:5000"
+
+volumes:
+  pgdata:

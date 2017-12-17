@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load document_tags %}
+
+{% block content %}
+    <script type="text/javascript" src="{{ pspdfkit_external_url }}/pspdfkit.js"></script>
+
+<header class="navbar">
+    <div class="navbar-left">
+        <a href="{% url 'documents_list' %}" class="navbar-icon">&lt;</a>
+    </div>
+    <div class="navbar-center">
+        <h1>{{ document.name }}</h1>
+    </div>
+    <div class="navbar-right">
+        {% if instant_enabled %}
+            <a href="?instant=false" class="btn btn-success navbar-btn">Instant: ON</a>
+        {% else %}
+            <a href="?instant=true" class="btn btn-default navbar-btn">Instant: OFF</a>
+        {% endif %}
+        {% if request.user == document.owner %}
+            <form method="post" style="display: inline;" id="delete-document-form">
+                {% csrf_token %}
+                <a class="btn btn-danger navbar-btn" onclick="deleteDocument()">Delete document</a>
+            </form>
+        {% endif %}
+    </div>
+</header>
+<main class="document">
+    <div id="doc-viewer" class="viewer"></div>
+    <script>
+        var configuration = {
+            authPayload: {
+                jwt: "{{ user_document.generate_jwt }}",
+            },
+            container: "#doc-viewer",
+            documentId: "{{ document.pspdfkit_id }}",
+            instant: {{ instant_enabled|yesno:"true,false" }},
+        };
+
+        PSPDFKit.load(configuration).catch(function(error) {
+            console.log(error);
+        });
+    </script>
+    <div class="sidebar">
+        <h3 class="sidebar-title">Who can see this document?</h3>
+        <form method="post" action="{% url 'share_document' user_document.id %}">
+            {% csrf_token %}
+            <ul class="list-group">
+                {% for user in users %}
+                    <li class="list-group-item">
+                        <label>
+                            {% if document.owner == user %}
+                                <input type="checkbox" name="owner" value="{{ user.id }}" disabled checked/>
+                                <span class="owner">
+                                    {{ user.username }} (Owner)
+                                </span>
+                            {% else %}
+                                {% user_has_access user document as has_access %}
+                                <input type="checkbox" name="users[]" value="{{ user.id }}" {% if has_access %}checked{% endif %} {% if request.user == user %}disabled{% endif %} /> {{ user.username }}
+                            {% endif %}
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+            <input type="submit" class="btn list-group-btn" value="Update Share Settings" />
+        </form>
+    </div>
+</main>
+<script>
+    function deleteDocument() {
+        if (confirm('are you sure?')) {
+            var form = document.getElementById('delete-document-form');
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}
